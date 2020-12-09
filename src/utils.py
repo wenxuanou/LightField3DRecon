@@ -26,18 +26,30 @@ def reconImg(L):
 
     return imgRecon
 
-def edgeConfidence(EPI_gray,edgeThresh):
-    [H,W] = EPI_gray.shape
+def edgeConfidence(EPI,edgeThresh):
+    # EPI is with color, E: H,W,C
+    [H,W,C] = EPI.shape
 
-    Ce = np.zeros_like(EPI_gray)  # H*W, edge confidence with fix v and t
+    Ce = np.zeros((H,W))  # H*W, edge confidence with fix v and t
     for h in range(H):
         for w in range(W):
             # loop 9 pixel neightborhood
             # scanline always alone the horizontal axis for both EPI_h and EPI_v
-            for j in range(-3, 3):
+            for j in range(-1, 1):
                 if w+j > 0 and w+j < W:
-                    Ce[h, w] = Ce[h, w] + np.square(EPI_gray[h, w] - EPI_gray[h, w+j])
+                    # compute color intensity difference
+                    Ce[h, w] = Ce[h, w] + np.square(np.linalg.norm(EPI[h, w,:] - EPI[h, w+j,:]))
     # compute mask
     Me = Ce > edgeThresh  # H*W
     return Ce,Me
 
+def getR_Horizontal(s,d,uHat,EPI_h):
+    # using only Horizontal EPI, not 4D lightfield
+    # EPI_h: U*S*C
+
+    [U,S,C] = EPI_h.shape
+    R_sd = np.zeros((U,C))
+    for u in range(U):
+        R_sd[u,:] = EPI_h[u,s+(uHat - u)*d,:]
+
+    return R_sd

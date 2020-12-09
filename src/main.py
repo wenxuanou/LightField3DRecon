@@ -5,7 +5,7 @@ from skimage import (
 )
 
 from utils import (
-    loadMat,reconImg,edgeConfidence
+    loadMat,reconImg,edgeConfidence,getR_Horizontal
 )
 
 if __name__ == "__main__":
@@ -47,21 +47,19 @@ if __name__ == "__main__":
     edgeThresh = 0.02
 
     # horizontal
-    EPI_h_gray = color.rgb2gray(EPI_h)  # U*S
     # plt.figure(1)
-    # io.imshow(EPI_h_gray)
+    # io.imshow(EPI_h)
 
-    Ce_h,Me_h = edgeConfidence(EPI_h_gray,edgeThresh)   # Ce_H: U*S; Me_h: U*S
+    Ce_h,Me_h = edgeConfidence(EPI_h,edgeThresh)   # Ce_H: U*S; Me_h: U*S
     # plt.figure(2)
     # io.imshow(Me_h)
     # plt.show()
 
     # vertical
-    EPI_v_gray = color.rgb2gray(EPI_v)  # V*T
     # plt.figure(1)
-    # io.imshow(EPI_v_gray)
+    # io.imshow(EPI_v)
 
-    Ce_v, Me_v = edgeConfidence(EPI_v_gray, edgeThresh) # Ce_H: U*S; Me_h: U*S
+    Ce_v, Me_v = edgeConfidence(EPI_v, edgeThresh) # Ce_H: U*S; Me_h: U*S
     # plt.figure(2)
     # io.imshow(Me_v)
     # plt.show()
@@ -79,13 +77,31 @@ if __name__ == "__main__":
     vHat = int(np.floor(V/2))
 
     # extract index of confident from mask
-    id_h = np.argwhere(Me_h[uHat,:]>0)    # Me_h: U*S; list_h:[u,s]
-    id_v = np.argwhere(Me_v[vHat,:]>0)    # Me_v: V*T; list_v:[v,t]
+    uId = np.argwhere(Me_h[uHat,:]>0)    # Me_h: U*S; list_h:[u,s]
+    vId = np.argwhere(Me_v[vHat,:]>0)    # Me_v: V*T; list_v:[v,t]
+    print(len(uId))
 
-    print(id_h.shape)
+    for d in range(D):
+        R_sd = getR_Horizontal(s, d, uHat, EPI_h)
+        print(R_sd.shape)
 
+    # R = np.zeros((U,V,S,T,D,C))     # randiance, R: len(uId)*len(vId)*S*T*D*C
     # for d in range(D):
     #     # in every disparity estimation
-
-
+    #     for s in range(S):
+    #         for t in range(T):
+    #             for u in uId:
+    #                 for v in vId:
+    #
+    #                     if s+(uHat - u)*d > S:
+    #                         R[u, v, s, t, d, :] = L[u, v, int(np.floor(s + (uHat - u) * d)),
+    #                                               int(np.floor(t + (vHat - v) * d)), :]
+    #
+    #                     R[u,v,s,t,d,:] = L[u,v,int(np.floor(s+(uHat - u)*d)),int(np.floor(t+(vHat - v)*d)),:]
+    #
+    # Rd = R[:,:,:,:,10,:]
+    # Rd.reshape(U,V,S,T,C)
+    # R_recon = reconImg(Rd)
+    # io.imshow(R_recon)
+    # plt.imshow()
 
