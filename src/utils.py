@@ -25,3 +25,19 @@ def reconImg(L):
             imgRecon[s*U:(s+1)*U,t*V:(t+1)*V,:] = L[:,:,s,t,:]
 
     return imgRecon
+
+def edgeConfidence(EPI_gray,edgeThresh):
+    [H,W] = EPI_gray.shape
+
+    Ce = np.zeros_like(EPI_gray)  # H*W, edge confidence with fix v and t
+    for h in range(H):
+        for w in range(W):
+            # loop 9 pixel neightborhood
+            # scanline always alone the horizontal axis for both EPI_h and EPI_v
+            for j in range(-3, 3):
+                if w+j > 0 and w+j < W:
+                    Ce[h, w] = Ce[h, w] + np.square(EPI_gray[h, w] - EPI_gray[h, w+j])
+    # compute mask
+    Me = Ce > edgeThresh  # H*W
+    return Ce,Me
+
