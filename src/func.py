@@ -65,3 +65,4 @@ def r_bar_noiseFree(r_bar0,R_sd):
         r_bar = val1 / (val2 + 0.0000001)     # update, avoid NAN
 
     return r_bar
+

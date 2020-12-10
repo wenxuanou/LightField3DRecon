@@ -77,21 +77,25 @@ if __name__ == "__main__":
     uHat = int(np.floor(U/2))     # make uHat the horizontal centerline
     vHat = int(np.floor(V/2))     # make vHat the horizontal centerline
 
+    # using only horizontal EPI for now
     # compute depth score
-    depthScore = np.zeros((S,D,C))
+    depthScore = np.zeros((S,D))  # depthScore: S*D*C
     for d in range(D):
-        # using only horizontal EPI for now
         for s in range(S):
             R_sd = getR_Horizontal(s, d, uHat, EPI_h)   # R: N*C, 0 < N < U
             [N,_] = R_sd.shape
 
             r_bar = EPI_h[uHat,s,:]     # EPI_h: U*S*C
-            r_bar = r_bar_noiseFree(r_bar,R_sd)
+            r_bar = r_bar_noiseFree(r_bar,R_sd)     # r_bar: 1*3
 
             sumVal = 0
             for n in range(N):
                 sumVal = sumVal + K(R_sd[n,:] - r_bar)
 
-            depthScore[s,d,:] = sumVal / N              # divided by the size of R
+            depthScore[s,d] = sumVal / N              # divided by the size of R, scalar
 
     print(depthScore.shape)
+
+    # pixel depth estimate
+    D_uHat = np.argmax(depthScore,axis=1)   # D(uHat,s): S*1
+    print(D_uHat)
