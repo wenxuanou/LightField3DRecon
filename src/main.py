@@ -5,7 +5,10 @@ from skimage import (
 )
 
 from utils import (
-    loadMat,reconImg,edgeConfidence,getR_Horizontal
+    loadMat,reconImg
+)
+from func import (
+    edgeConfidence,getR_Horizontal,K,r_bar_noiseFree
 )
 
 if __name__ == "__main__":
@@ -71,37 +74,24 @@ if __name__ == "__main__":
     # range of disparity
     D = 20      # 0 to 20
 
-    # sHat = int(np.floor(S/2))   # make sHat the horizontal centerline
-    # tHat = int(np.floor(T/2))   # make tHat the vertical centerline
-    uHat = int(np.floor(U/2))
-    vHat = int(np.floor(V/2))
+    uHat = int(np.floor(U/2))     # make uHat the horizontal centerline
+    vHat = int(np.floor(V/2))     # make vHat the horizontal centerline
 
-    # extract index of confident from mask
-    uId = np.argwhere(Me_h[uHat,:]>0)    # Me_h: U*S; list_h:[u,s]
-    vId = np.argwhere(Me_v[vHat,:]>0)    # Me_v: V*T; list_v:[v,t]
-    print(len(uId))
-
+    # compute depth score
+    depthScore = np.zeros((S,D,C))
     for d in range(D):
-        R_sd = getR_Horizontal(s, d, uHat, EPI_h)
-        print(R_sd.shape)
+        # using only horizontal EPI for now
+        for s in range(S):
+            R_sd = getR_Horizontal(s, d, uHat, EPI_h)   # R: N*C, 0 < N < U
+            [N,_] = R_sd.shape
 
-    # R = np.zeros((U,V,S,T,D,C))     # randiance, R: len(uId)*len(vId)*S*T*D*C
-    # for d in range(D):
-    #     # in every disparity estimation
-    #     for s in range(S):
-    #         for t in range(T):
-    #             for u in uId:
-    #                 for v in vId:
-    #
-    #                     if s+(uHat - u)*d > S:
-    #                         R[u, v, s, t, d, :] = L[u, v, int(np.floor(s + (uHat - u) * d)),
-    #                                               int(np.floor(t + (vHat - v) * d)), :]
-    #
-    #                     R[u,v,s,t,d,:] = L[u,v,int(np.floor(s+(uHat - u)*d)),int(np.floor(t+(vHat - v)*d)),:]
-    #
-    # Rd = R[:,:,:,:,10,:]
-    # Rd.reshape(U,V,S,T,C)
-    # R_recon = reconImg(Rd)
-    # io.imshow(R_recon)
-    # plt.imshow()
+            r_bar = EPI_h[uHat,s,:]     # EPI_h: U*S*C
+            r_bar = r_bar_noiseFree(r_bar,R_sd)
 
+            sumVal = 0
+            for n in range(N):
+                sumVal = sumVal + K(R_sd[n,:] - r_bar)
+
+            depthScore[s,d,:] = sumVal / N              # divided by the size of R
+
+    print(depthScore.shape)
