@@ -16,7 +16,7 @@ if __name__ == "__main__":
     # light field image captured by Lytro ILLUM
     # demosaiced light field image, processed by MATLAB file
     # matPath = "../data/lightfield2.mat"
-    matPath = "../data/guide.mat"
+    matPath = "../data/tower.mat"
 
     # read 5D focal stack, processed by MATLAB
     L = loadMat(matPath)      # L(u,v,s,t,c)
@@ -31,19 +31,19 @@ if __name__ == "__main__":
     #######################################
     # extract EPI
 
-    # vertical EPI, fix v and t, EPI: U*S*C
+    # vertical EPI, fix v and t
     v0 = int(np.floor(V/2))  # scan vertical center line
     t0 = int(np.floor(T/2))
     EPI_v = L[:,v0,:,t0,:]
-    EPI_v = np.reshape(EPI_v,(U,S,C))
+    EPI_v = np.reshape(EPI_v,(U,S,C))   # U*S*C
     # io.imshow(EPI_v)
     # plt.show()
 
-    # horizontal EPI, fix u and s, EPI: V*T*C
+    # horizontal EPI, fix u and s
     u0 = int(np.floor(U/2))  # scan horizontal center line
     s0 = int(np.floor(S/2))
     EPI_h = L[u0,:,s0,:,:]
-    EPI_h = np.reshape(EPI_h,(V,T,C))
+    EPI_h = np.reshape(EPI_h,(V,T,C))   # V*T*C
     # io.imshow(EPI_h)
     # plt.show()
 
@@ -83,8 +83,8 @@ if __name__ == "__main__":
 
     # using only horizontal EPI for now
     # EPI_h = L(u0,:,s0,:,:), fixed u and s, V*T*C
-    # compute depth score
-    depthScore_vHat = getDepthScore(vHat,T,D,EPI_h)
+    # compute depth score along vHat
+    depthScore_vHat = getDepthScore(vHat,T,D,EPI_h) # T*D
 
     # pixel depth estimate
     D_vHat = np.argmax(depthScore_vHat,axis=1)   # D(vHat,t): T*1
@@ -96,9 +96,12 @@ if __name__ == "__main__":
 
     # bilateral mediant filter on Depth estimate
     # TODO: need to build this median filter
+    epsilon = 10 ** (-5)  # confident threshold, original epsilon = 0.1
 
-
-    # Store confident depth estimation as 3D rays
-    Gamma = np.zeros((D,V,T,3))         # Gamma(d,vHat,t,r_bar.T): D,u,s,3
-    epsilon = 0.01                       # same as the epsilon used in bilateral filter, original epsilon = 0.1
-    processed = Cd_vHat > epsilon       # masks
+    # depth propagation
+    # propagation only confident depth
+    temp = Cd_vHat * (10 ** 6) > epsilon
+    D_vHat = np.multiply(D_vHat, Cd_vHat > epsilon)    # confidence all too small, scaled down epsilon
+    # assign depth alone slope
+    depthEPI = np.zeros((V,T))  # V*T
+    depthEPI[vHat,:] = D_vHat

@@ -63,8 +63,8 @@ def r_bar_noiseFree(r_bar0,R_td):
 
     [N,C] = R_td.shape
     r_bar = r_bar0
-    val1 = np.zeros_like(r_bar)
-    val2 = np.zeros_like(r_bar)
+    # val1 = np.zeros_like(r_bar)
+    # val2 = np.zeros_like(r_bar)
 
     for iter in range(iterNum):
         # for n in range(N):
