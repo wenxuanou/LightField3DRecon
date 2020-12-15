@@ -1,6 +1,7 @@
 import numpy as np
-from skimage import (
-    io,color,filters,transform
+import matplotlib.pyplot as plt
+from skimage import(
+    io
 )
 
 def edgeConfidence(EPI,edgeThresh):
@@ -101,31 +102,32 @@ def refinedConfidence(vHat,Ce, depthScore):
     # TODO: depth bilateral median filter
 
 
-def getDepthScore(vHat,T,D,EPI_h):
+def getDepthScore(vHat,T,D,EPI_h,Me_h):
     # using only horizontal EPI
     # EPI_h = L(u0,:,s0,:,:), fixed u and s, V*T*C
+    # Me_h: V*T, only compute depth at Me_h = 1
     depthScore = np.zeros((T, D))  # depthScore: T*D
-    for d in range(D):
-        for t in range(T):
-            R_td = getR_Horizontal(t, d, vHat, EPI_h)  # R: N*C, 0 < N < V
-            [N, _] = R_td.shape
 
-            r_bar = EPI_h[vHat, t, :]  # EPI_h: V*T*C
-            r_bar = r_bar_noiseFree(r_bar, R_td)  # r_bar: 1*3
+    for t in range(T):
+        for d in range(D):
 
-            # sumVal = 0
-            # for n in range(N):
-            #     sumVal = sumVal + K(R_sd[n,:] - r_bar)
+            if Me_h[vHat,t]:
+                R_td = getR_Horizontal(t, d, vHat, EPI_h)  # R: N*C, 0 < N < V
+                [N, _] = R_td.shape
 
-            # remove looping
-            sumVal = K(R_td - r_bar)
-            sumVal = np.sum(sumVal)
+                r_bar = EPI_h[vHat, t, :]  # EPI_h: V*T*C
+                r_bar = r_bar_noiseFree(r_bar, R_td)  # r_bar: 1*3
 
-            depthScore[t, d] = sumVal / N  # divided by the size of R, scalar
+                # sumVal = 0
+                # for n in range(N):
+                #     sumVal = sumVal + K(R_sd[n,:] - r_bar)
 
-        print(d, "/", D)
+                # remove looping
+                sumVal = K(R_td - r_bar)
+                sumVal = np.sum(sumVal) / N
 
-    # plt.matshow(depthScore)
-    # plt.show()
+                depthScore[t, d] = sumVal  # divided by the size of R, scalar
+
+        # print("Depth score progress: ",t/T*100,"%")
 
     return depthScore
