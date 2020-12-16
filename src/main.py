@@ -47,9 +47,9 @@ if __name__ == "__main__":
         #######################################
         # EPI edge confidence
         Ce_h,Me_h = edgeConfidence(EPI_h,edgeThresh)   # Ce_H: V*T; Me_h: V*T
-
-        io.imshow(Ce_h)
-        plt.show()
+        
+        # io.imshow(Ce_h)
+        # plt.show()
 
         #######################################
         # depth computation
