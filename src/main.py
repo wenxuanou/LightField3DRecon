@@ -30,7 +30,7 @@ if __name__ == "__main__":
 
     depthMap = np.zeros((S,T))  # depthMap, S*T
     edgeThresh = 0.02           # edge confidence threshold
-    epsilon = 10**(-5)          # refined confident threshold, original epsilon = 0.1, set to 10e-5
+    epsilon = 0.1          # refined confident threshold, original epsilon = 0.1, set to 10e-5
 
     #######################################
     # extract EPI
@@ -47,7 +47,7 @@ if __name__ == "__main__":
         #######################################
         # EPI edge confidence
         Ce_h,Me_h = edgeConfidence(EPI_h,edgeThresh)   # Ce_H: V*T; Me_h: V*T
-        
+
         # io.imshow(Ce_h)
         # plt.show()
 
@@ -85,7 +85,7 @@ if __name__ == "__main__":
                 if np.linalg.norm(r_hat) > 1:
                     EPI_h_slice = EPI_h[vHat,:,:]              # EPI_h_slice: T*3
 
-                    cond1 = np.linalg.norm(r_hat - EPI_h_slice,axis=1) < 0.01           # similar radiance/color
+                    cond1 = np.linalg.norm(r_hat - EPI_h_slice,axis=1) < 0.1           # similar radiance/color
                     cond2 = D_vHat < D_vHat[id]
                     # D_vHat[cond1] = D_vHat[id]              # raise lower depth
                     D_vHat[np.logical_and(cond1,cond2)] = D_vHat[id]              # raise lower depth

@@ -49,11 +49,6 @@ def K(x):
 
     return np.multiply(mask, 1 - np.square(normVal))    # 1*N
 
-    # if np.linalg.norm(x/h,axis=1) < 1:
-    #     return 1 - np.linalg.norm(x/h,axis=1)**2
-    # else:
-    #     return 0
-
 
 def r_bar_noiseFree(r_bar0,R_td):
     # for noisy EPI
@@ -64,13 +59,8 @@ def r_bar_noiseFree(r_bar0,R_td):
 
     [N,C] = R_td.shape
     r_bar = r_bar0
-    # val1 = np.zeros_like(r_bar)
-    # val2 = np.zeros_like(r_bar)
 
     for iter in range(iterNum):
-        # for n in range(N):
-        #     val1 = val1 + K(R_sd[n,:] - r_bar) * R_sd[n,:]
-        #     val2 = val2 + K(R_sd[n,:] - r_bar)
 
         # removed for loop
         # K(R_sd[n,:] - r_bar): 1*N
@@ -116,10 +106,6 @@ def getDepthScore(vHat,T,D,EPI_h,Me_h):
                 [N, _] = R_td.shape
 
                 r_bar = r_bar_noiseFree(r_bar, R_td)  # r_bar: 1*3
-
-                # sumVal = 0
-                # for n in range(N):
-                #     sumVal = sumVal + K(R_sd[n,:] - r_bar)
 
                 # remove looping
                 sumVal = K(R_td - r_bar)
