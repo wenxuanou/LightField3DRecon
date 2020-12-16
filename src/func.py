@@ -13,7 +13,7 @@ def edgeConfidence(EPI,edgeThresh):
         for w in range(W):
             # loop 9 pixel neightborhood
             # scanline always alone the horizontal axis for both EPI_h and EPI_v
-            for j in range(-1, 1):
+            for j in range(-8, 8):
                 if w+j > 0 and w+j < W:
                     # compute color intensity difference
                     Ce[h, w] = Ce[h, w] + np.square(np.linalg.norm(EPI[h, w,:] - EPI[h, w+j,:]))
@@ -93,8 +93,6 @@ def refinedConfidence(vHat,Ce, depthScore):
     # at vHat
     Cd_vHat = np.multiply(Ce[vHat,:], np.abs(maxScore - avgScore))  # 1*S
 
-    print(Cd_vHat.shape)
-
     return Cd_vHat
 
 # def depthBilateralMedian(D_uHat,):
@@ -110,12 +108,13 @@ def getDepthScore(vHat,T,D,EPI_h,Me_h):
 
     for t in range(T):
         for d in range(D):
+            # average radiance/color
+            r_bar = EPI_h[vHat, t, :]  # EPI_h: V*T*C
 
-            if Me_h[vHat,t]:
+            if Me_h[vHat,t] and np.linalg.norm(r_bar)>0:
                 R_td = getR_Horizontal(t, d, vHat, EPI_h)  # R: N*C, 0 < N < V
                 [N, _] = R_td.shape
 
-                r_bar = EPI_h[vHat, t, :]  # EPI_h: V*T*C
                 r_bar = r_bar_noiseFree(r_bar, R_td)  # r_bar: 1*3
 
                 # sumVal = 0
@@ -131,3 +130,4 @@ def getDepthScore(vHat,T,D,EPI_h,Me_h):
         # print("Depth score progress: ",t/T*100,"%")
 
     return depthScore
+
