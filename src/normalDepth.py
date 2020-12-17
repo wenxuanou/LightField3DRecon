@@ -268,7 +268,7 @@ def afi(L,alpha,f):
 
 if __name__ == "__main__":
     # load light field image
-    matPath = "../data/lightfield2.mat"
+    matPath = "../data/Cup2.mat"
     L = loadMat(matPath)
 
     # generate AFI

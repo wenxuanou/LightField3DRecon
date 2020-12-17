@@ -38,61 +38,73 @@ if __name__ == "__main__":
     u0 = int(np.floor(U/2))  # scan horizontal center line
 
     # iterate every row
-    for s0 in range(S):
-        EPI_h = L[u0,:,s0,:,:]
-        EPI_h = np.reshape(EPI_h,(V,T,C))   # V*T*C
-        # io.imshow(EPI_h)
-        # plt.show()
+    s0 = int(np.floor(S/2))
+    # for s0 in range(S):
+    EPI_h = L[u0,:,s0,:,:]
+    EPI_h = np.reshape(EPI_h,(V,T,C))   # V*T*C
+    # io.imshow(EPI_h)
+    # plt.show()
 
-        #######################################
-        # EPI edge confidence
-        Ce_h,Me_h = edgeConfidence(EPI_h,edgeThresh)   # Ce_H: V*T; Me_h: V*T
+    #######################################
+    # EPI edge confidence
+    Ce_h,Me_h = edgeConfidence(EPI_h,edgeThresh)   # Ce_H: V*T; Me_h: V*T
 
-        # io.imshow(Ce_h)
-        # plt.show()
+    # io.imshow(Ce_h)
+    # plt.show()
 
-        #######################################
-        # depth computation
-        # only compute depth at where Me = 1
+    #######################################
+    # depth computation
+    # only compute depth at where Me = 1
 
-        # range of disparity
-        D = 20      # 0 to 20
-        print("Computing depth score")
+    # range of disparity
+    D = 20      # 0 to 20
+    print("Computing depth score")
 
-        # initialize
-        vHat = int(np.floor(V/2))     # make vHat the horizontal centerline
+    # initialize
+    vHat = int(np.floor(V/2))     # make vHat the horizontal centerline
 
-        # using only horizontal EPI for now
-        # EPI_h = L(u0,:,s0,:,:), fixed u and s, V*T*C
-        # compute depth score along vHat
-        depthScore_vHat = getDepthScore(vHat,T,D,EPI_h,Me_h) # T*D
+    # using only horizontal EPI for now
+    # EPI_h = L(u0,:,s0,:,:), fixed u and s, V*T*C
+    # compute depth score along vHat
+    depthScore_vHat = getDepthScore(vHat,T,D,EPI_h,Me_h) # T*D
 
-        # pixel depth estimate
-        print("Estimate depth")
-        D_vHat = np.argmax(depthScore_vHat,axis=1)   # D(vHat,t): T*1
-        # compute refined confidence, only on horizontal, fixed uHat, Cd(vHat, t)
-        Cd_vHat = refinedConfidence(vHat,Ce_h,depthScore_vHat)  # T*1
+    # pixel depth estimate
+    print("Estimate depth")
+    D_vHat = np.argmax(depthScore_vHat,axis=1)   # D(vHat,t): T*1
+    # compute refined confidence, only on horizontal, fixed uHat, Cd(vHat, t)
+    Cd_vHat = refinedConfidence(vHat,Ce_h,depthScore_vHat)  # T*1
 
-        # depth propagation
-        # threshold confident depth
-        D_vHat = np.multiply(D_vHat, Cd_vHat > epsilon)    # confidence all too small, scaled down epsilon
+    # depth propagation
+    # threshold confident depth
+    D_vHat = np.multiply(D_vHat, Cd_vHat > epsilon)    # confidence all too small, scaled down epsilon
 
-        # filling up
-        if np.count_nonzero(D_vHat) > 0:
-            ids = np.argwhere(D_vHat>0)                    # propagate non-zero depth, confident, D_vHat: T*1
-            for id in ids:
-                r_hat = EPI_h[vHat,id,:]                   # EPI ray of confident locations, r_bar: 1*3
-                if np.linalg.norm(r_hat) > 1:
-                    EPI_h_slice = EPI_h[vHat,:,:]              # EPI_h_slice: T*3
+    # filling up
+    if np.count_nonzero(D_vHat) > 0:
+        ids = np.argwhere(D_vHat>0)                    # propagate non-zero depth, confident, D_vHat: T*1
+        for id in ids:
+            r_hat = EPI_h[vHat,id,:]                   # EPI ray of confident locations, r_bar: 1*3
+            if np.linalg.norm(r_hat) > 1:
+                EPI_h_slice = EPI_h[vHat,:,:]              # EPI_h_slice: T*3
 
-                    cond1 = np.linalg.norm(r_hat - EPI_h_slice,axis=1) < 0.1           # similar radiance/color
-                    cond2 = D_vHat < D_vHat[id]
-                    # D_vHat[cond1] = D_vHat[id]              # raise lower depth
-                    D_vHat[np.logical_and(cond1,cond2)] = D_vHat[id]              # raise lower depth
+                cond1 = np.linalg.norm(r_hat - EPI_h_slice,axis=1) < epsilon           # similar radiance/color
+                cond2 = D_vHat < D_vHat[id]
+                # D_vHat[cond1] = D_vHat[id]              # raise lower depth
+                D_vHat[np.logical_and(cond1,cond2)] = D_vHat[id]              # raise lower depth
 
-        depthMap[s0,:] = D_vHat
+    if s0 == int(np.floor(S/2)):
+        plt.figure(1)
+        io.imshow(EPI_h)
+        io.imsave("EPI.png",EPI_h)
+        plt.figure(2)
+        plt.plot(Cd_vHat)
+        plt.figure(3)
+        plt.plot(D_vHat)
+        plt.plot()
+        print("here")
 
-        print("Progress: ", s0/S*100,"% ########################")
+    depthMap[s0,:] = D_vHat
+
+    print("Progress: ", s0/S*100,"% ########################")
 
     print("Depth estimate finished")
 
@@ -114,11 +126,11 @@ if __name__ == "__main__":
 
 
     # save depth map image
-    io.imsave("depthMapTower.png", depthMap)
+    io.imsave("depthMapCup2.png", depthMap)
 
     # save depth map as matrix
     ext_out = {"depthMap": depthMap}        # all T*3
-    np.savez("depthMapTower.npz", **ext_out)
+    np.savez("depthMapCup2.npz", **ext_out)
     print("Depth Map stored")
 
     io.imshow(depthMap)

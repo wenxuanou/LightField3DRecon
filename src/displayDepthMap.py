@@ -7,13 +7,15 @@ import scipy.ndimage
 
 if __name__ == "__main__":
 
-    dataName = "depthMapTower.npz"
+    dataName = "depthMapCup2.npz"
     Data = np.load(dataName, allow_pickle=False)
     depthMap = Data['depthMap']
 
     [S,T] = depthMap.shape
     # depthMap = scipy.ndimage.gaussian_filter(depthMap,sigma=,mode="mirror")
     depthMapNew = np.zeros_like(depthMap)
+    # depthMapNew = depthMap
+
 
     # bilateral median
     print("Bilateral filtering")
@@ -29,6 +31,7 @@ if __name__ == "__main__":
                 # print("found")
                 neighbourVal = np.multiply(neighbourMask, depthMap[s-winSize:s+winSize,t-winSize:t+winSize])
                 depthMapNew[s, t] = np.sum(neighbourVal) / nonZeroNum
+                # depthMapNew[s, t] = np.median(neighbourVal[neighbourVal>0])
 
 
             # for ss in range(s - winSize, s + winSize):
@@ -44,9 +47,10 @@ if __name__ == "__main__":
     id = np.argwhere(depthMapNew>0)    # only display depth above 0
     y = id[:,0]
     x = id[:,1]
+    io.imsave("depthMapCup2Proc.png",depthMapNew)
     plt.figure(1)
     io.imshow(depthMapNew)
     plt.figure(2)
     ax = plt.axes(projection='3d')
-    ax.scatter(x, depthMapNew[y,x], -y, s=0.1)
+    ax.scatter(x, y, depthMapNew[y,x], s=0.01)
     plt.show()

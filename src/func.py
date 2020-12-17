@@ -13,7 +13,7 @@ def edgeConfidence(EPI,edgeThresh):
         for w in range(W):
             # loop 9 pixel neightborhood
             # scanline always alone the horizontal axis for both EPI_h and EPI_v
-            for j in range(-8, 8):
+            for j in range(-4, 4):
                 if w+j > 0 and w+j < W:
                     # compute color intensity difference
                     Ce[h, w] = Ce[h, w] + np.square(np.linalg.norm(EPI[h, w,:] - EPI[h, w+j,:]))
