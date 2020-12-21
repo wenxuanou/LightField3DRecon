@@ -295,4 +295,4 @@ if __name__ == "__main__":
     # generate depth map
     print("generating depth map")
     I_AFI_depth = depthMap_AFI(w_AFI_sharp,f)
-    io.imsave("depth_map_AFI.png",I_AFI_depth)
+    io.imsave("depth_map_AFI_Cup2.png",I_AFI_depth)

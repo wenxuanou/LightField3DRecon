@@ -7,7 +7,7 @@ from utils import (
     loadMat,reconImg
 )
 from func import (
-    edgeConfidence,refinedConfidence,getDepthScore
+    edgeConfidence,refinedConfidence,getDepthScore_H,getDepthScore_V
 )
 import scipy.signal
 
@@ -28,7 +28,8 @@ if __name__ == "__main__":
     # io.imshow(imgRecon)
     # plt.show()
 
-    depthMap = np.zeros((S,T))  # depthMap, S*T
+    depthMap_H = np.zeros((S,T))  # depthMap, S*T
+    depthMap_V = np.zeros((S,T))
     edgeThresh = 0.02           # edge confidence threshold
     epsilon = 0.1          # refined confident threshold, original epsilon = 0.1, set to 10e-5
 
@@ -36,10 +37,14 @@ if __name__ == "__main__":
     # extract EPI
     # horizontal EPI, fix u, specify s
     u0 = int(np.floor(U/2))  # scan horizontal center line
+    v0 = int(np.floor(V/2))
 
     # iterate every row
-    s0 = int(np.floor(S/2))
+
     # for s0 in range(S):
+
+    s0 = int(np.floor(S/2))
+
     EPI_h = L[u0,:,s0,:,:]
     EPI_h = np.reshape(EPI_h,(V,T,C))   # V*T*C
     # io.imshow(EPI_h)
@@ -48,9 +53,6 @@ if __name__ == "__main__":
     #######################################
     # EPI edge confidence
     Ce_h,Me_h = edgeConfidence(EPI_h,edgeThresh)   # Ce_H: V*T; Me_h: V*T
-
-    # io.imshow(Ce_h)
-    # plt.show()
 
     #######################################
     # depth computation
@@ -66,7 +68,7 @@ if __name__ == "__main__":
     # using only horizontal EPI for now
     # EPI_h = L(u0,:,s0,:,:), fixed u and s, V*T*C
     # compute depth score along vHat
-    depthScore_vHat = getDepthScore(vHat,T,D,EPI_h,Me_h) # T*D
+    depthScore_vHat = getDepthScore_H(vHat,T,D,EPI_h,Me_h) # T*D
 
     # pixel depth estimate
     print("Estimate depth")
@@ -77,6 +79,7 @@ if __name__ == "__main__":
     # depth propagation
     # threshold confident depth
     D_vHat = np.multiply(D_vHat, Cd_vHat > epsilon)    # confidence all too small, scaled down epsilon
+
 
     # filling up
     if np.count_nonzero(D_vHat) > 0:
@@ -94,19 +97,69 @@ if __name__ == "__main__":
     if s0 == int(np.floor(S/2)):
         plt.figure(1)
         io.imshow(EPI_h)
-        io.imsave("EPI.png",EPI_h)
         plt.figure(2)
         plt.plot(Cd_vHat)
         plt.figure(3)
         plt.plot(D_vHat)
-        plt.plot()
+        plt.figure(4)
+        plt.plot(depthScore_vHat[int(T/2)])
+        # io.imshow(depthScore_vHat.T)
+        plt.show()
         print("here")
 
-    depthMap[s0,:] = D_vHat
+    depthMap_H[s0,:] = D_vHat
+    print("Progress horizontal: ", s0/S*100,"% ########################")
 
-    print("Progress: ", s0/S*100,"% ########################")
+    for t0 in range(T):
+        EPI_v = L[:, v0, :, t0, :]
+        EPI_v = np.reshape(EPI_v, (U, S, C))  # U*S*C
+
+        #######################################
+        # EPI edge confidence
+        Ce_v, Me_v = edgeConfidence(EPI_v, edgeThresh)
+
+        #######################################
+        # depth computation
+        # only compute depth at where Me = 1
+
+        # range of disparity
+        D = 20  # 0 to 20
+        print("Computing depth score")
+
+        # initialize
+        uHat = int(np.floor(U / 2))
+
+        depthScore_uHat = getDepthScore_V(uHat, S, D, EPI_v, Me_v)
+
+        # pixel depth estimate
+        print("Estimate depth")
+
+        D_uHat = np.argmax(depthScore_uHat, axis=1)
+        Cd_uHat = refinedConfidence(uHat, Ce_v, depthScore_uHat)
+
+        # depth propagation
+        # threshold confident depth
+        D_uHat = np.multiply(D_uHat, Cd_uHat > epsilon)
+
+        if np.count_nonzero(D_uHat) > 0:
+            ids = np.argwhere(D_uHat > 0)
+            for id in ids:
+                r_hat = EPI_v[uHat, id, :]
+                if np.linalg.norm(r_hat) > 1:
+                    EPI_v_slice = EPI_v[uHat, :, :]
+
+                    cond1 = np.linalg.norm(r_hat - EPI_v_slice, axis=1) < epsilon  # similar radiance/color
+                    cond2 = D_uHat < D_uHat[id]
+                    D_uHat[np.logical_and(cond1, cond2)] = D_uHat[id]  # raise lower depth
+
+        depthMap_V[:, t0] = D_uHat
+        print("Progress vertical: ", t0 / T * 100, "% ########################")
+
+
+    depthMap = (depthMap_H + depthMap_V)/2
 
     print("Depth estimate finished")
+
 
     # # bilateral median
     # print("Bilateral filtering")
@@ -126,11 +179,11 @@ if __name__ == "__main__":
 
 
     # save depth map image
-    io.imsave("depthMapCup2.png", depthMap)
+    io.imsave("depthMapGuide.png", depthMap)
 
     # save depth map as matrix
     ext_out = {"depthMap": depthMap}        # all T*3
-    np.savez("depthMapCup2.npz", **ext_out)
+    np.savez("depthMapGuide.npz", **ext_out)
     print("Depth Map stored")
 
     io.imshow(depthMap)

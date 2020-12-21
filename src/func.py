@@ -38,6 +38,22 @@ def getR_Horizontal(t,d,vHat,EPI_h):
 
     return R_sd
 
+def getR_Vertical(s,d,uHat,EPI_v):
+
+    [U,S,C] = EPI_v.shape
+    R_td = np.zeros((U,C))
+
+    u = 0
+    while s+(uHat - u)*d < S and u < U:   # make sure not over the boundary
+        # save pixel intensity alone epipolar line
+        R_td[u, :] = EPI_v[u, s + (uHat - u) * d, :]
+        u += 1
+
+    R_td = R_td[0:u-1,:]
+
+    return R_td
+
+
 def K(x):
     # kernel
     # x is a 3 channel EPI radiance, N*3
@@ -90,7 +106,7 @@ def refinedConfidence(vHat,Ce, depthScore):
     # TODO: depth bilateral median filter
 
 
-def getDepthScore(vHat,T,D,EPI_h,Me_h):
+def getDepthScore_H(vHat,T,D,EPI_h,Me_h):
     # using only horizontal EPI
     # EPI_h = L(u0,:,s0,:,:), fixed u and s, V*T*C
     # Me_h: V*T, only compute depth at Me_h = 1
@@ -117,3 +133,26 @@ def getDepthScore(vHat,T,D,EPI_h,Me_h):
 
     return depthScore
 
+def getDepthScore_V(uHat,S,D,EPI_v,Me_v):
+    depthScore = np.zeros((S, D))  # depthScore: T*D
+
+    for s in range(S):
+        for d in range(D):
+            # average radiance/color
+            r_bar = EPI_v[uHat, s, :]  # EPI_h: V*T*C
+
+            if Me_v[uHat,s] and np.linalg.norm(r_bar)>0:
+                R_sd = getR_Vertical(s, d, uHat, EPI_v)  # R: N*C, 0 < N < V
+                [N, _] = R_sd.shape
+
+                r_bar = r_bar_noiseFree(r_bar, R_sd)  # r_bar: 1*3
+
+                # remove looping
+                sumVal = K(R_sd - r_bar)
+                sumVal = np.sum(sumVal) / N
+
+                depthScore[s, d] = sumVal  # divided by the size of R, scalar
+
+        # print("Depth score progress: ",t/T*100,"%")
+
+    return depthScore

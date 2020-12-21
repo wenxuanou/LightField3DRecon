@@ -7,7 +7,7 @@ import scipy.ndimage
 
 if __name__ == "__main__":
 
-    dataName = "depthMapCup2.npz"
+    dataName = "depthMapGuide.npz"
     Data = np.load(dataName, allow_pickle=False)
     depthMap = Data['depthMap']
 
@@ -21,7 +21,7 @@ if __name__ == "__main__":
     print("Bilateral filtering")
     for s in range(S):
         for t in range(T):
-            winSize = 5  # window size, 5+5+1 -> 11*11
+            winSize = 1  # window size, 5+5+1 -> 11*11
             depthBuff = np.array([])
             # loop in window
 
@@ -47,10 +47,10 @@ if __name__ == "__main__":
     id = np.argwhere(depthMapNew>0)    # only display depth above 0
     y = id[:,0]
     x = id[:,1]
-    io.imsave("depthMapCup2Proc.png",depthMapNew)
+    io.imsave("depthMapGuideProc.png",depthMapNew)
     plt.figure(1)
     io.imshow(depthMapNew)
     plt.figure(2)
     ax = plt.axes(projection='3d')
-    ax.scatter(x, y, depthMapNew[y,x], s=0.01)
+    ax.scatter(x, depthMapNew[y,x], -y, s=0.01)
     plt.show()
